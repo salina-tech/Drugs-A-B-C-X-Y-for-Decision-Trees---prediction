@@ -1,0 +1,61 @@
+---
+title: "drug200"
+output: html_document
+date: "2023-03-24"
+---
+# Import and load packages
+library(ggplot2)
+library(lattice)
+library(caret)
+library(rpart)
+library(rpart.plot)
+
+# load and view data
+drug200 <- read.csv("~/Downloads/drug200.csv")
+
+# Check for missing data
+is.na(drug200)
+
+# Check the data type
+typeof(drug200)
+
+# Convert the categorical variables to numeric codes
+drug200$Sex <- as.numeric(factor(drug200$Sex, levels = c("F", "M")))
+drug200$Drug <- as.numeric(factor(drug200$Drug, levels = c("drugX", "drugA", "drugC", "drugB", "drugY")))
+drug200$Cholesterol <- as.numeric(factor(drug200$Cholesterol, levels = c("NORMAL", "HIGH")))
+drug200$BP <- as.numeric(factor(drug200$BP, levels = c("LOW", "NORMAL", "HIGH")))
+
+drug200 <- read.csv("~/Downloads/drug200.csv")
+
+# Split a data set into a training set and a test set:
+## Select the predictor variables and the response variable
+X <- drug200[, c("Age", "Drug", "Sex", "BP", "Cholesterol", "Na_to_K")]
+y <- drug200[["Drug"]]
+
+## Set the random seed for reproducibility
+set.seed(123)
+
+## Split the data into training and test sets (70/30 split)
+train_indices <- createDataPartition(y, p = 0.7, list = FALSE)
+X_train <- X[train_indices, ]
+X_test <- X[-train_indices, ]
+y_train <- y[train_indices]
+y_test <- y[-train_indices]
+
+## Fit the decision tree classifier
+tree_model <- rpart(y_train ~ ., data = X_train, method = "class")
+
+## Make predictions on the test set
+y_pred <- predict(tree_model, newdata = X_test, type = "class")
+
+## convert y_test and y_pred to factors with the same levels
+y_test <- factor(y_test, levels = levels(factor(y)))
+y_pred <- factor(y_pred, levels = levels(factor(y)))
+
+# evaluate and print accuracy score
+conf_mat <- confusionMatrix(y_test, y_pred)
+accuracy <- conf_mat$overall['Accuracy']
+print(paste0("Accuracy score: ", round(accuracy, 4)))
+
+# plot decision tree
+rpart.plot(tree_model)
